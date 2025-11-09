@@ -1,15 +1,40 @@
 # 忽略目录
-
+log/
+bin/
+build/
 
 # 忽略文件
-
+*.o
+*.so
+*.a
+*.log
+*.dat
 
 # 忽略文件类型
-
+# 可执行文件
+!*.cc
+!*.cpp
+!*.h
 
 # 忽略编辑器配置文件
 .vscode/
 
+# 编译器和调试器生成的文件
+*.d
+*.s
+*.i
+*.ii
 
 # 构建生成内容
 *.o
+include/Jieba
+include/Simhash
+
+# 临时文件和备份文件
+*~
+.*.swp
+.*.swo
+
+# OS生成的文件
+.DS_Store
+Thumbs.db
