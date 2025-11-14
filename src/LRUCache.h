@@ -8,7 +8,7 @@
 using std::string;
 using std::unordered_map;
 using std::list;
-
+using std::pair;
 
 /**
  * 缓存类
@@ -24,8 +24,9 @@ public:
     list<string,string> &getPendingUpdateList();    //获取待更新的节点List
 
 private:
-    unordered_map<string,iterator> _hashMap;  //采用hashTable进行查找
     list<string, string> _resultsList;  //保存键值对
+    //unordered_map<string,iterator> _hashMap;  //采用hashTable进行查找
+    unordered_map<string,list<pair<string, string>>> _hashMap;
     list<string, string> _pengdingUpdateList;   //等待更新的节点信息
     int _capacity;  //缓存节点容量
 };
