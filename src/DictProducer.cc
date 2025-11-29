@@ -54,6 +54,7 @@ void DictProducer::buildEnDict()
             string word;
             while (iss >> word)//将每行的单词进行判断符合条件的最终插入容器
             {
+                for (char& c : word) if (c >= 'A' && c <= 'Z') c |= 0x20;
                 // 属于停用词，直接跳过此单词不处理
                 if(_stopWordList.count(word)){
                     continue;

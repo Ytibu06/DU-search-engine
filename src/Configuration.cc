@@ -10,7 +10,6 @@
 #include <string>
 
 using std::cout;
-using namespace tinyxml2;
 using std::cerr;
 using std::endl;
 using std::ifstream;
@@ -43,7 +42,7 @@ map<string, string> &Configuration::getConfigMap()
       return _configMap;
    }
 
-   XMLDocument doc;
+   tinyxml2::XMLDocument doc;
    doc.LoadFile(_filePath.c_str());
    if (doc.ErrorID())
    {
@@ -51,7 +50,7 @@ map<string, string> &Configuration::getConfigMap()
       exit(1);
    }
    _configMap.clear();
-   XMLElement *item = nullptr;
+   tinyxml2::XMLElement *item = nullptr;
 
    string DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH;
    string jieba_dict_path, hmm_model_path, idf_path, stop_words_path;
@@ -59,7 +58,7 @@ map<string, string> &Configuration::getConfigMap()
    // JIEBA_DICT_UTF8
 
    // 获取根节点下的path节点
-   XMLElement *pathElement = doc.FirstChildElement("path");
+   tinyxml2::XMLElement *pathElement = doc.FirstChildElement("path");
    if (!pathElement)
    {
       cerr << "Cannot find path element" << endl;
@@ -67,7 +66,7 @@ map<string, string> &Configuration::getConfigMap()
    }
 
    // 获取CPPJIEBA_PATH节点
-   XMLElement *cppjiebaElement = pathElement->FirstChildElement("CPPJIEBA_PATH");
+   tinyxml2::XMLElement *cppjiebaElement = pathElement->FirstChildElement("CPPJIEBA_PATH");
    if (cppjiebaElement)
    {
       // JIEBA字典路径
@@ -106,7 +105,7 @@ map<string, string> &Configuration::getConfigMap()
       }
    }
 
-   XMLElement *simhashElement = pathElement->FirstChildElement("SIMHASH_PATH");
+   tinyxml2::XMLElement *simhashElement = pathElement->FirstChildElement("SIMHASH_PATH");
    if (simhashElement)
    {
       item = simhashElement->FirstChildElement("jieba_dict_path");
@@ -149,7 +148,7 @@ map<string, string> &Configuration::getConfigMap()
 // 获取停用词词集
 set<string> Configuration::getStopWordList()
 {
-   XMLDocument doc;
+   tinyxml2::XMLDocument doc;
    doc.LoadFile(_filePath.c_str());
    if (doc.ErrorID())
    {
@@ -157,18 +156,18 @@ set<string> Configuration::getStopWordList()
       exit(1);
    }
 
-   XMLElement *item = nullptr;
+   tinyxml2::XMLElement *item = nullptr;
    vector<string> paths;
 
    // 获取根节点下的path节点
-   XMLElement *pathElement = doc.FirstChildElement("path");
+   tinyxml2::XMLElement *pathElement = doc.FirstChildElement("path");
    if (!pathElement)
    {
       cerr << "Cannot find path element" << endl;
       exit(1);
    }
 
-   XMLElement *stopWordElement = pathElement->FirstChildElement("STOP_WORD_LIST");
+   tinyxml2::XMLElement *stopWordElement = pathElement->FirstChildElement("STOP_WORD_LIST");
    if (!stopWordElement)
    {
       cerr << "Cannot find STOP_WORD_LIST element" << "\n";
@@ -202,6 +201,7 @@ set<string> Configuration::getStopWordList()
          std::istringstream iss(line);
          while (iss >> stop)
          {
+            for (char& c : stop) if (c >= 'A' && c <= 'Z') c |= 0x20;
             _stopWordList.insert(stop);
          }
       }
