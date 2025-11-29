@@ -1,18 +1,11 @@
-#include "SplitToolCppJieba.h"
-#include "../include/cppjieba/Jieba.hpp"
+#include "SplitTool.h"
 
-SplitTool::SplitTool()
+SplitTool::SplitTool() 
 {
+    // 基类构造函数实现
 }
 
-SplitToolCppJieba::~SplitToolCppJieba()
+SplitTool::~SplitTool() 
 {
+    // 基类析构函数实现（虚函数）
 }
-
-
-vector<string> SplitToolCppJieba::cut(const string &sentence)
-{
-
-}
-
-

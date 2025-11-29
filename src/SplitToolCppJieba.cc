@@ -1,4 +1,4 @@
-#include "SplitToolCppJieba.h"
+#include "SplitTool.h"
 #include "../include/cppjieba/Jieba.hpp"
 #include <iostream>
 using std::cout;
@@ -8,8 +8,6 @@ using std::map;
 SplitToolCppJieba::SplitToolCppJieba(Configuration &conf)
 :_conf(conf)
 {
-    
-
 }
 SplitToolCppJieba::~SplitToolCppJieba()
 {

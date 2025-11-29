@@ -19,8 +19,19 @@ class SplitTool
 {
 public:
     SplitTool();
-    virtual ~SplitTool(){};
+    virtual ~SplitTool();
     virtual vector<string> cut(const string &sentence) = 0; //分词函数，纯虚函数提供接口
+};
+
+class SplitToolCppJieba: public SplitTool
+{
+public:
+    SplitToolCppJieba(Configuration &conf);
+    virtual ~SplitToolCppJieba();
+    virtual vector<string> cut(const string &sentence);
+
+private:
+    Configuration & _conf;  //配置文件路径
 };
 
 #endif
