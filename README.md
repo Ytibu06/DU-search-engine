@@ -18,4 +18,5 @@
 - data/newoffset.dat：存放网页的偏移库
 - data/invertIndex.dat：存放倒排索引库
 - log/:存放日志文件
+- source/：资源文件，关键词要搜索的内容，包含中文语料、英文语料、网页文件语料、停用词
 - Makefile：makefile文件

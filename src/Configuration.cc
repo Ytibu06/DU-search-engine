@@ -54,7 +54,7 @@ map<string, string> &Configuration::getConfigMap()
 
    string DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH;//Cppjieba五个文件路径
    string jieba_dict_path, hmm_model_path, idf_path, stop_words_path;//simhash四个文件路径
-   string WEB_PAGE_PATH;//网页文件路径
+   string WEB_PAGE_PATH, RE_WEB_PAGE_PATH;//网页文件路径
 
    // JIEBA_DICT_UTF8
 
@@ -139,6 +139,10 @@ map<string, string> &Configuration::getConfigMap()
       if(item){
          WEB_PAGE_PATH = item->GetText();
       }
+      item = webPage->FirstChildElement("RE_WEB_PAGE_PATH");
+      if(item){
+         RE_WEB_PAGE_PATH = item->GetText();
+      }
    }
 
 
@@ -154,7 +158,8 @@ map<string, string> &Configuration::getConfigMap()
        {"idf_path", idf_path},
        {"stop_words_path", stop_words_path},
 
-       {"WEB_PAGE_PATH", WEB_PAGE_PATH}
+       {"WEB_PAGE_PATH", WEB_PAGE_PATH},
+       {"RE_WEB_PAGE_PATH", RE_WEB_PAGE_PATH}
    };
 
    return _configMap;

@@ -58,22 +58,24 @@ void PageLib::create(vector<string> &fileNameList) // 创建网页库
         //若有item元素，读取内部元素内容，拼接成字符串，加入格式化容器中
         while (item)
         {
-            std::regex pattern(R"(<!\[CDATA\[(.*?)\]\]>)"); // 正则
+            std::regex reg1(R"(<!\[CDATA\[(.*?)\]\]>)"); // 正则
+            std::regex reg2("<[^>]*>");
 
             tinyxml2::XMLElement *titleElement = item->FirstChildElement("title");
             tinyxml2::XMLElement *linkElement = item->FirstChildElement("link");
             tinyxml2::XMLElement *descElement = item->FirstChildElement("description");
 
-            string title = regex_replace(titleElement->GetText() ? titleElement->GetText() : "", pattern, "");
+            string title = regex_replace(titleElement->GetText() ? titleElement->GetText() : "", reg1, "");
             string url = linkElement->GetText() ? linkElement->GetText() : "";
             string content = descElement->GetText() ? descElement->GetText() : "";
+            content = regex_replace(content, reg2, "");
             string docid = to_string(++i);
 
             string fmtTxt = string("<doc>\n") +
                             "<docid>" + docid + "</docid>\n" +
                             "<url>" + url + "</url>\n" +
                             "<title>" + title + "</title>\n" +
-                            "<content>" + content + "</text>\n" +
+                            "<content>" + content + "</content>\n" +
                             "</doc>\n";
 
             _pages.push_back(fmtTxt);//将格式化后的网页加入容器

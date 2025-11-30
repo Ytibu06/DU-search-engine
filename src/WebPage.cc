@@ -10,25 +10,33 @@
 #include <fstream>
 #include <string>
 #include <regex>
+#include <cstdint>
 
-using std::string;
 using std::cerr;
-using std::ifstream;
-using std::regex_replace;
-using std::regex;
 using std::cout;
+using std::ifstream;
+using std::regex;
+using std::regex_replace;
+using std::string;
 
 WebPage::WebPage(string &doc, Configuration &config, SplitToolCppJieba &jieba)
-:_doc(doc)
+: _doc(doc)
 {
-    processDoc(doc,config, jieba);  //将每篇文档转换为webPage的成员变量
-    set<string> stopWordList = config.getStopWordList();//获取停用词
-    //calcTopK(vector<string> &wordsVec, 20, stopWordList)
+    //处理文档，每个文档转换成一个网页对象
+    processDoc(doc, config, jieba);
+    setSimHash();
+
 }
 // 获取文档id
 int WebPage::getDocId() const
 {
     return _docId;
+}
+
+// 获取文档
+string WebPage::getDoc() const
+{
+    return _docContent;
 }
 
 string WebPage::getTitle() const
@@ -40,84 +48,112 @@ string WebPage::getUrl() const
 {
     return _docUrl;
 }
-
-// 获取文档
-string WebPage::getDoc() const
+uint64_t WebPage::getSimHash() const
 {
-    return _docContent;
+    return _simHash;
 }
 
 // 文档词频统计map
 map<string, int> &WebPage::getWordsMap()
 {
     return _wordsMap;
-}     
-
-// string _doc;//整篇文章，包括xml
-//     int _docId; //文档id
-//     string _docTitle;   //文档标题
-//     string _docUrl; //文档url
-//     string _docContent; //文档内容
-//     string _docSummary; //文档摘要，自动生成，不固定
-//     vector<string> _topWords;   //词频最高的前20个词
-//     map<string,int> _wordsMap;  //保存每篇文档的所有词语和词频，不包含停用词
+}
 
 
-// 对文档进行格式化处理
-void WebPage::processDoc(const string &doc, Configuration &config, SplitToolCppJieba &jieba)
+// 对文档进行格式化处理，并生成一个文档对象，文章内容交给topK生成词频和topK
+void WebPage::processDoc(const string &docString, Configuration &config, SplitToolCppJieba &jieba)
 {
-    tinyxml2::XMLDocument docObj;
-    docObj.Parse(doc.c_str());
-    tinyxml2::XMLElement *item = docObj.FirstChildElement("item");
-    if(item){
+    set<string> stopWordList = config.getStopWordList();
 
-        regex pattern(R"(<!\[CDATA\[(.*?)\]\]>)"); //正则
-
-        //剔除标题乱格式
-        _docTitle = regex_replace(item->FirstChildElement("title")->GetText(), pattern, "");
-        _docUrl = item->FirstChildElement("link")->GetText();   //link转url
-        _docContent = item->FirstChildElement("description")->GetText();    //获取描述作为上下文
-        _docId  = std::hash<std::string>{}(_docTitle);
-
-        vector<string> result = jieba.cut(_docContent);
-        // Process each word in result if needed
-        // for example: update word frequency map
-        for(const auto &word : result) {
-            // 增加词频统计
-            _wordsMap[word]++;
-        }
+    tinyxml2::XMLDocument docMention;
+    docMention.Parse(docString.c_str());
+    if (docMention.ErrorID())
+    {
+        cerr << "WebPage::processDoc: Parse" << docString << " error" << "\n";
     }
 
+    tinyxml2::XMLElement *doc = docMention.FirstChildElement("doc");
+    if (doc)
+    {
+        _docId = std::stoi(doc->FirstChildElement("docid")->GetText());
+        _docUrl = doc->FirstChildElement("url")->GetText();
+        _docTitle = doc->FirstChildElement("title")->GetText();
+        _docContent = doc->FirstChildElement("content")->GetText();
+
+        vector<string> vec = jieba.cut(_docContent + _docTitle);
+
+        calcTopK(vec, 20, stopWordList); // topK统计词频，并统计topK个词
+
+    }
 }
- 
-// 获取文档的topk词集
+
+//获取所有词频和topK
 void WebPage::calcTopK(vector<string> &wordsVec, int k, set<string> &stopWordList)
 {
 
-}
-     
+    for (auto &word : wordsVec)
+    {
+        if (!stopWordList.count(word) && getByteNum_Utf8(word[0]) == 3)
+        {
+            // 这是一个中文词，继续处理
+            if (_wordsMap.find(word) != _wordsMap.end())
+            {
+                ++_wordsMap[word];
+            }
+            else
+            {
+                _wordsMap[word] = 1;
+            }
+        }
+    }
 
-bool operator==(const WebPage &lhs, const WebPage &rhs) // 判断两篇文档是否相等
+    int count = 0;
+    for (auto &elem : _wordsMap)
+    {
+        if (count >= k)
+            break;
+        _topWords.push_back(elem.first);
+        ++count;
+    }
+}
+
+//simhash值计算
+void WebPage::setSimHash()
 {
-    simhash::Simhasher simhash("../include/simhash/dict/jieba.dict.utf8","../include/simhash/dict/hmm_model.utf8", 
-        "../include/simhash/dict/idf.utf8","../include/simhash/dict/stop_words.utf8");
-    string lhsContent = lhs.getDoc(), rhsContent = rhs.getDoc();//获取文档内容
+    simhash::Simhasher simhash("../include/simhash/dict/jieba.dict.utf8", "../include/simhash/dict/hmm_model.utf8",
+                               "../include/simhash/dict/idf.utf8", "../include/simhash/dict/stop_words.utf8");
+    string lhsContent = _docContent + _docTitle;
     size_t topN = 5;
-    uint64_t lhsBin = 0, rhsBin = 0; //指纹
-    vector<std::pair<string,double> > lhs_keywords, rhs_keywords; //生成-- 单词 : 权重
+    uint64_t lhsBin = 0;                              // 指纹
+    vector<std::pair<string, double>> lhs_keywords, rhs_keywords; // 生成-- 单词 : 权重
     simhash.extract(lhsContent, lhs_keywords, topN);
-    simhash.extract(rhsContent, rhs_keywords, topN);
-    simhash.make(lhsContent, topN, lhsBin);    //将指纹的值赋值给 u64
-    simhash.make(rhsContent, topN, rhsBin);
+    simhash.make(lhsContent, topN, lhsBin); // 将指纹的值赋值给 u64
 
-    //cout << simhash.isEqual(u64_bin1, u64_bin2) << "\n";
-    cout << "海明距离为默认3: " << simhash.isEqual(lhsBin, rhsBin) << "\n";
-    cout << "海明距离为5: " << simhash.isEqual(lhsBin, rhsBin, 5) << "\n";
-
-    return simhash.isEqual(lhsBin, rhsBin);
-
+    _simHash = lhsBin;
 }
-bool operator<(const WebPage &lhs, const WebPage &rhs)  // 对文档DocId进行排序
+
+//首字节判断
+size_t WebPage::getByteNum_Utf8(const char byte)
+{
+    int byteNum = 0;
+    for (size_t i = 0; i < 6; ++i)
+    {
+        if (byte & (1 << (7 - i)))
+            ++byteNum;
+        else
+            break;
+    }
+    return byteNum == 0 ? 1 : byteNum;
+}
+
+// 判断两篇文档是否相等
+bool operator==(const WebPage &lhs, const WebPage &rhs) 
+{
+    return simhash::Simhasher::isEqual(lhs.getSimHash(), rhs.getSimHash());
+}
+
+// 对文档DocId进行排序
+bool operator<(const WebPage &lhs, const WebPage &rhs) 
 {
     return lhs._docId < rhs._docId;
 }
