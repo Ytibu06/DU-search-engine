@@ -80,7 +80,7 @@ namespace simhash
                 jenkins _tmp_hasher;
 
                 hashvalues.resize(keywords.size());
-                for (int32_t i = 0; i < keywords.size(); ++i) {
+                for (size_t i = 0; i < keywords.size(); ++i) {
                     hashvalues[i].first = _tmp_hasher(keywords[i].first.c_str(), keywords[i].first.size(), 0);
                     hashvalues[i].second = keywords[i].second;
                 }

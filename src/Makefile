@@ -1,1 +1,0 @@
-g++ test.cc Configuration.cc SplitToolCppJieba.cc ../include/tinyxml/tinyxml2.cpp -o test  -I../include   -I../include/cppjieba   -I../include/tinyxml

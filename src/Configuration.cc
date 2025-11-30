@@ -52,8 +52,9 @@ map<string, string> &Configuration::getConfigMap()
    _configMap.clear();
    tinyxml2::XMLElement *item = nullptr;
 
-   string DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH;
-   string jieba_dict_path, hmm_model_path, idf_path, stop_words_path;
+   string DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH;//Cppjieba五个文件路径
+   string jieba_dict_path, hmm_model_path, idf_path, stop_words_path;//simhash四个文件路径
+   string WEB_PAGE_PATH;//网页文件路径
 
    // JIEBA_DICT_UTF8
 
@@ -105,6 +106,7 @@ map<string, string> &Configuration::getConfigMap()
       }
    }
 
+   //获取simhash路径
    tinyxml2::XMLElement *simhashElement = pathElement->FirstChildElement("SIMHASH_PATH");
    if (simhashElement)
    {
@@ -130,6 +132,16 @@ map<string, string> &Configuration::getConfigMap()
       }
    }
 
+   //网页库相关配置
+   tinyxml2::XMLElement *webPage = pathElement->FirstChildElement("WEB_PAGE");
+   if(webPage){
+      item = webPage->FirstChildElement("WEB_PAGE_PATH");
+      if(item){
+         WEB_PAGE_PATH = item->GetText();
+      }
+   }
+
+
    _configMap = {
        {"DICT_PATH", DICT_PATH},
        {"HMM_PATH", HMM_PATH},
@@ -140,7 +152,10 @@ map<string, string> &Configuration::getConfigMap()
        {"jieba_dict_path", jieba_dict_path},
        {"hmm_model_path", hmm_model_path},
        {"idf_path", idf_path},
-       {"stop_words_path", stop_words_path}};
+       {"stop_words_path", stop_words_path},
+
+       {"WEB_PAGE_PATH", WEB_PAGE_PATH}
+   };
 
    return _configMap;
 }

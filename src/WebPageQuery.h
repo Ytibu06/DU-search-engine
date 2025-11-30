@@ -2,6 +2,7 @@
 #define __WEBPAGEQUERY_H__ 
 
 #include "WebPage.h"
+#include "SplitTool.h"
 #include <map>
 #include <unordered_map>
 using std::unordered_map;
@@ -12,7 +13,8 @@ using std::pair;
  */
 class WebPageQuery {
 public:
-    WebPageSearcher();
+    //WebPageSearcher();
+    WebPageQuery();
     string doQuery(const string &str);  //执行查询返回结果
 
 private:
@@ -23,7 +25,7 @@ private:
     string returnNoAnswer();    //返回无答案
 
 private:
-    WordSegmentation _jieba;    //jieba分词库对象
+    SplitToolCppJieba _jieba;    //jieba分词库对象
     unordered_map<int, WebPage> _pageLib;   //网页库
     unordered_map<int, pair<int,int>> _offsetLib;   //网页偏移库
     unordered_map<string, set<pair<int,double>>> _invertIndexTable; //倒排索引表
