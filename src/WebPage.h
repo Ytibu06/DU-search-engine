@@ -11,6 +11,7 @@
 using std::string;
 using std::vector;
 using std::map;
+using std::pair;
 
 /**
  * 网页类
@@ -24,16 +25,15 @@ public:
     WebPage(string &doc, Configuration &config, SplitToolCppJieba &jieba);
     int getDocId()const; //获取文档id
     string getDoc() const;//获取文档
-    string getTitle() const;
-    string getUrl() const;
     map<string,int> &getWordsMap(); //文档词频统计map
     uint64_t getSimHash() const;    //获取文档的simhash值
 
 private:
     void processDoc(const string &doc, Configuration &config, SplitToolCppJieba &jieba);  //对文档进行格式化处理
-    void calcTopK(vector<string> &wordsVec, int k, set<string> &stopWordList);   //获取文档的topk词集
+    void calcTopK(vector<string> &keywords, int k, set<string> &stopWordList);   //获取文档的topk词集
+    void setSimHash(Configuration &config,const string &docString);
     size_t getByteNum_Utf8(const char byte);
-    void setSimHash();
+    
 
 
 private:

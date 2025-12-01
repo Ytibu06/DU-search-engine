@@ -46,7 +46,7 @@ map<string, string> &Configuration::getConfigMap()
    doc.LoadFile(_filePath.c_str());
    if (doc.ErrorID())
    {
-      cerr << "LoadFile Error" << endl;
+      perror("Configuration::getConfigMap：LoadFile");
       exit(1);
    }
    _configMap.clear();
@@ -54,7 +54,7 @@ map<string, string> &Configuration::getConfigMap()
 
    string DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH;//Cppjieba五个文件路径
    string jieba_dict_path, hmm_model_path, idf_path, stop_words_path;//simhash四个文件路径
-   string WEB_PAGE_PATH, RE_WEB_PAGE_PATH;//网页文件路径
+   string WEB_PAGE_PATH, RI_PAGE_DAT, OFFSET_DAT;//网页文件路径
 
    // JIEBA_DICT_UTF8
 
@@ -62,7 +62,7 @@ map<string, string> &Configuration::getConfigMap()
    tinyxml2::XMLElement *pathElement = doc.FirstChildElement("path");
    if (!pathElement)
    {
-      cerr << "Cannot find path element" << endl;
+      perror("Cannot find path element");
       exit(1);
    }
 
@@ -139,27 +139,33 @@ map<string, string> &Configuration::getConfigMap()
       if(item){
          WEB_PAGE_PATH = item->GetText();
       }
-      item = webPage->FirstChildElement("RE_WEB_PAGE_PATH");
+      item = webPage->FirstChildElement("RI_PAGE_DAT");
       if(item){
-         RE_WEB_PAGE_PATH = item->GetText();
+         RI_PAGE_DAT = item->GetText();
+      }
+
+      item = webPage->FirstChildElement("OFFSET_DAT");
+      if(item){
+         OFFSET_DAT = item->GetText();
       }
    }
 
 
    _configMap = {
-       {"DICT_PATH", DICT_PATH},
-       {"HMM_PATH", HMM_PATH},
-       {"USER_DICT_PATH", USER_DICT_PATH},
-       {"IDF_PATH", IDF_PATH},
-       {"STOP_WORD_PATH", STOP_WORD_PATH},
+      {"DICT_PATH", DICT_PATH},
+      {"HMM_PATH", HMM_PATH},
+      {"USER_DICT_PATH", USER_DICT_PATH},
+      {"IDF_PATH", IDF_PATH},
+      {"STOP_WORD_PATH", STOP_WORD_PATH},
 
-       {"jieba_dict_path", jieba_dict_path},
-       {"hmm_model_path", hmm_model_path},
-       {"idf_path", idf_path},
-       {"stop_words_path", stop_words_path},
+      {"jieba_dict_path", jieba_dict_path},
+      {"hmm_model_path", hmm_model_path},
+      {"idf_path", idf_path},
+      {"stop_words_path", stop_words_path},
 
-       {"WEB_PAGE_PATH", WEB_PAGE_PATH},
-       {"RE_WEB_PAGE_PATH", RE_WEB_PAGE_PATH}
+      {"WEB_PAGE_PATH", WEB_PAGE_PATH},
+      {"RI_PAGE_DAT", RI_PAGE_DAT},
+      {"OFFSET_DAT", OFFSET_DAT}
    };
 
    return _configMap;
@@ -172,7 +178,7 @@ set<string> Configuration::getStopWordList()
    doc.LoadFile(_filePath.c_str());
    if (doc.ErrorID())
    {
-      cerr << "LoadFile Error" << endl;
+      perror("Configuration::getStopWordList: LoadFile");
       exit(1);
    }
 
@@ -183,14 +189,14 @@ set<string> Configuration::getStopWordList()
    tinyxml2::XMLElement *pathElement = doc.FirstChildElement("path");
    if (!pathElement)
    {
-      cerr << "Cannot find path element" << endl;
+      perror("Configuration::getStopWordList: Cannot find path element");
       exit(1);
    }
 
    tinyxml2::XMLElement *stopWordElement = pathElement->FirstChildElement("STOP_WORD_LIST");
    if (!stopWordElement)
    {
-      cerr << "Cannot find STOP_WORD_LIST element" << "\n";
+      perror("Configuration::getStopWordList: Cannot find STOP_WORD_LIST element");
       exit(1);
    }
 
@@ -210,7 +216,7 @@ set<string> Configuration::getStopWordList()
       ifstream ifs(path);
       if (!ifs)
       {
-         cerr << "open file error in getStopWordList: " << path << "\n";
+         perror("Configuration::getStopWordList: open file error");
       }
 
       string line;

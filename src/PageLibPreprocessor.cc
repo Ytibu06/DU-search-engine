@@ -7,12 +7,16 @@
 #include <iostream>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
+#include <string>
+
+#include <sys/param.h>
 
 using std::cerr;
+using std::cout;
 using std::ifstream;
 using std::ofstream;
-using std::cout;
 
 PageLibPreprocessor::PageLibPreprocessor(Configuration &config, SplitToolCppJieba &jieba)
     : _jieba(jieba)
@@ -20,7 +24,7 @@ PageLibPreprocessor::PageLibPreprocessor(Configuration &config, SplitToolCppJieb
     readInfoFromFile(config, _jieba);
 }
 
-//预处理
+// 预处理
 void PageLibPreprocessor::doProcess()
 {
     cutRedundantPages();
@@ -32,35 +36,64 @@ void PageLibPreprocessor::doProcess()
 void PageLibPreprocessor::readInfoFromFile(Configuration &config, SplitToolCppJieba &_jieba)
 {
     string element;
-    std::cout << "Reading web page library..." << "\n";
     map<string, string> conf = config.getConfigMap();
-    std::string _webPagePath = conf["RE_WEB_PAGE_PATH"]; // 直接获取扫描配置文件的容器
+    std::string _webPagePath = conf["RI_PAGE_DAT"]; // 直接获取扫描配置文件的容器
+    string _offsetPath = conf["OFFSET_DAT"];
 
-    // 打开网页库文件
-    ifstream ifs(_webPagePath);
-    if (!ifs)
+    ifstream ifsOFF(_offsetPath);
+    if (!ifsOFF)
     {
-        cerr << "open file error" << "\n";
+        perror("PageLibPreprocessor::readInfoFromFile: open offset file error");
+        return;
     }
 
-    //解析每个doc
-    tinyxml2::XMLDocument doc; // 获取所有文档，并生成vector<webpage>。
-    doc.LoadFile(_webPagePath.c_str());
-    tinyxml2::XMLElement *webDoc = doc.FirstChildElement("doc");
-
-    while (webDoc)
+    // 以二进制模式打开网页库文件
+    ifstream ifsWeb(_webPagePath, std::ios::binary);
+    if (!ifsWeb)
     {
-        // 获取doc节点
-        tinyxml2::XMLPrinter printer;
-        webDoc->Accept(&printer);
-        element = string(printer.CStr());
+        perror("PageLibPreprocessor::readInfoFromFile: open ripage file error");
+        return;
+    }
 
-        //根据每个doc节点，生成webpage对象，并存储到vector中
-        WebPage webPage(element, config, _jieba);
+    string line;
+    while (getline(ifsOFF, line))
+    {
+        int id, start, length; // 使用streamsize存储长度
+
+        std::stringstream ss(line);
+        if (!(ss >> id >> start >> length))
+        {
+            perror("PageLibPreprocessor::readInfoFromFile: parse offset file error");
+            continue; // 跳过错误行
+        }
+
+        // 定位到指定位置
+        ifsWeb.seekg(start, std::ios::beg);
+        if (!ifsWeb)
+        {
+            perror("PageLibPreprocessor::readInfoFromFile: seek to position error");
+            continue;
+        }
+
+        // 分配缓冲区并读取指定长度的数据
+        vector<char> buffer(length + 1); // +1 for null terminator
+        ifsWeb.read(buffer.data(), length);
+
+        // 检查实际读取的字节数
+        size_t bytesRead = ifsWeb.gcount();
+        if (bytesRead != length)
+        {
+            perror("Error: Failed to read from file");
+        }
+        // 确保字符串以null结尾
+        buffer[MIN(bytesRead, length)] = '\0';
+        // 转换为string
+        string info(buffer.data(), bytesRead);
+
+        cout << "Reading file: " << info << "\n";
+
+        WebPage webPage(info, config, _jieba);
         _pageLib.push_back(webPage);
-
-        // 获取下一个doc节点
-        webDoc = webDoc->NextSiblingElement("doc");
     }
 }
 
@@ -83,6 +116,9 @@ void PageLibPreprocessor::buildInvertIndexTable()
 {
     for (auto &webPage : _pageLib)
     {
+        perror("docid");
+        cout << "正在处理网页：" << webPage.getDocId() << "\n";
+
     }
 }
 
@@ -91,7 +127,7 @@ void PageLibPreprocessor::storeOnDisk()
 {
 }
 
-//SplitToolCppJieba _jieba;    // 分词对象
-//vector <WebPage> _pageLib;  // 网页库容器的对象
-//unordered_map<int, pair<int, int> > _offsetLib; //网页偏移库对象
-//unordered_map<string, vector<pair<int, double>>> _invertIndexTable; //倒排索引表对象
+// SplitToolCppJieba _jieba;    // 分词对象
+// vector <WebPage> _pageLib;  // 网页库容器的对象
+// unordered_map<int, pair<int, int> > _offsetLib; //网页偏移库对象
+// unordered_map<string, vector<pair<int, double>>> _invertIndexTable; //倒排索引表对象

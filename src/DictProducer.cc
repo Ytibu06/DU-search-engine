@@ -43,7 +43,7 @@ void DictProducer::buildEnDict()
         ifstream ifs(filePath);
         if (!ifs)
         {
-            cerr << "open file error: " << filePath << "\n";
+            perror("DictProducer::buildEnDict: open file error: ");
             continue;
         }//文件打开检测
 
@@ -95,7 +95,7 @@ void DictProducer::buildCnDict()
         ifstream ifs(dir_file, ios::ate);
         if (!ifs.good())
         {
-            cerr << "open file error: " << dir_file << "\n";
+            perror("DictProducer::buildCnDict: open file error");
             continue;
         }
 
@@ -152,7 +152,7 @@ void DictProducer::storeDict(const char *filePath)
     ofstream ofs(filePath);
     if (!ofs)
     {
-        cerr << "open file error: storeDict" << "\n";
+        perror("DictProducer::storeDict: open file error");
         return;
     }
 
@@ -171,7 +171,7 @@ void DictProducer::storeIndex(const char *filePath)
     ofstream ofs(filePath);
     if (!ofs)
     {
-        cerr << "open file error: storeIndex" << "\n";
+        perror("DictProducer::storeIndex: open file error");
         return;
     }
 
@@ -214,8 +214,7 @@ void DictProducer::getFiles(const string &dir)
     DIR *pDir = opendir(dir.c_str());
     if (!pDir)
     {
-        perror("opendir");
-        cout << dir << "\n";
+        perror("DictProducer::getFiles: opendir");
         return;
     }
 

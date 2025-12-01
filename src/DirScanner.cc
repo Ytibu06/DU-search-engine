@@ -30,7 +30,7 @@ void DirScanner::traverse(const string &dirname)
     DIR *pDir = opendir(dirname.c_str());
     if (!pDir)
     {
-        cerr << "DirScanner::traverse: opendir "  << dirname << " error\n";
+        perror("DirScanner::traverse: opendir");
         return;
     }
 
@@ -50,7 +50,7 @@ void DirScanner::traverse(const string &dirname)
         struct stat statBuf;
         if (stat(fullPath.c_str(), &statBuf) == -1)
         {
-            cerr << "Error: stat error for " << fullPath << "\n";
+            perror("DirScanner::traverse: stat error");
             continue;
         }
         if(S_ISDIR(statBuf.st_mode)){
