@@ -55,6 +55,7 @@ map<string, string> &Configuration::getConfigMap()
    string DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH;//Cppjieba五个文件路径
    string jieba_dict_path, hmm_model_path, idf_path, stop_words_path;//simhash四个文件路径
    string WEB_PAGE_PATH, RI_PAGE_DAT, OFFSET_DAT;//网页文件路径
+   string NEW_RIPE_PAGE_DAT, NEW_OFFSET_DAT, INVERT_INDEX_DAT; //新增的配置项
 
    // JIEBA_DICT_UTF8
 
@@ -148,6 +149,22 @@ map<string, string> &Configuration::getConfigMap()
       if(item){
          OFFSET_DAT = item->GetText();
       }
+      
+      // 新增的配置项
+      item = webPage->FirstChildElement("NEW_RIPE_PAGE_DAT");
+      if(item){
+         NEW_RIPE_PAGE_DAT = item->GetText();
+      }
+      
+      item = webPage->FirstChildElement("NEW_OFFSET_DAT");
+      if(item){
+         NEW_OFFSET_DAT = item->GetText();
+      }
+      
+      item = webPage->FirstChildElement("INVERT_INDEX_DAT");
+      if(item){
+         INVERT_INDEX_DAT = item->GetText();
+      }
    }
 
 
@@ -165,7 +182,10 @@ map<string, string> &Configuration::getConfigMap()
 
       {"WEB_PAGE_PATH", WEB_PAGE_PATH},
       {"RI_PAGE_DAT", RI_PAGE_DAT},
-      {"OFFSET_DAT", OFFSET_DAT}
+      {"OFFSET_DAT", OFFSET_DAT},
+      {"NEW_RIPE_PAGE_DAT", NEW_RIPE_PAGE_DAT},  // 新增配置项
+      {"NEW_OFFSET_DAT", NEW_OFFSET_DAT},        // 新增配置项
+      {"INVERT_INDEX_DAT", INVERT_INDEX_DAT}     // 新增配置项
    };
 
    return _configMap;

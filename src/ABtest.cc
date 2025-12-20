@@ -1,31 +1,61 @@
 #include <iostream>
+#include <chrono>
+
+
 #include "PageLib.h"
 #include "Configuration.h"
 #include "PageLibPreprocessor.h"
+#include "SplitTool.h"
 using namespace std;
 
-void test()
-{
-    Configuration &conf =  Configuration::getInstance("/home/du/workSpace/myDev/search-engine/conf/myconf.conf");
-    DirScanner scanner;
+// void test()
+// {
+//     Configuration &conf =  Configuration::getInstance("/root/workSpace/myDev/search-engine/conf/myconf.conf");
+//     DirScanner scanner;
 
-    PageLib lib(conf,scanner);
-    lib.store();
-}
+//     PageLib lib(conf,scanner);
+//     lib.create();
+//     lib.store();
+// }
 // g++ ABtest.cc Configuration.cc ../include/tinyxml/tinyxml2.cpp  DirScanner.cc PageLib.cc
 
-void test1(){
-//g++ ABtest.cc PageLibPreprocessor.cc WebPage.cc 
-//../include/tinyxml/tinyxml2.cpp Configuration.cc SplitTool.cc SplitToolCppJieba.cc PageLib.cc DirScanner.cc 
-    Configuration &conf =  Configuration::getInstance("/home/du/workSpace/myDev/search-engine/conf/myconf.conf");
-    SplitToolCppJieba splitTool(conf);
-    PageLibPreprocessor preprocessor(conf, splitTool);
+
+/* jieba测试*/
+// void jiebaTest(){
+//     Configuration &conf =  Configuration::getInstance("/root/workSpace/myDev/search-engine/conf/myconf.conf");
+//     SplitToolCppJieba jieba(conf);
+//     const int test_count = 1000; // 测试轮数
+//     int count = 0;
+
+//     auto start_time = std::chrono::high_resolution_clock::now();
+
+//     while (count < test_count)
+//     {
+//         vector<string> result;
+//         jieba.cut(" "
+//             ); // 添加了result参数以接收分词结果 "
+//             ++count;
+//     }
+
+//     auto end_time = std::chrono::high_resolution_clock::now();
+//     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+
+//     cout << "Total time for " << test_count << " cuts: " << duration.count() << " microseconds" << endl;
+//     cout << "Average time per cut: " << (double)duration.count() / test_count << " microseconds" << endl;
+// }
+
+void test2()
+{
+    Configuration &conf =  Configuration::getInstance("/root/workSpace/myDev/search-engine/conf/myconf.conf");
+    SplitToolCppJieba jieba(conf);
+    PageLibPreprocessor preprocessor(conf, jieba); // 修改为引用传递
     preprocessor.doProcess();
 }
 
 int main()
 {
     //test();
-    test1();
+    //jiebaTest();
+    test2();
     return 0;
 }

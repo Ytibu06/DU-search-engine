@@ -3,6 +3,7 @@
 #include "WebPage.h"
 
 #include "../include/tinyxml/tinyxml2.h"
+#include "../include/simhash/Simhasher.hpp"
 
 #include <iostream>
 #include <iostream>
@@ -10,18 +11,22 @@
 #include <sstream>
 #include <algorithm>
 #include <string>
+#include <unordered_set>
 
 #include <sys/param.h>
 
+using std::make_pair;
 using std::cerr;
 using std::cout;
 using std::ifstream;
 using std::ofstream;
 
 PageLibPreprocessor::PageLibPreprocessor(Configuration &config, SplitToolCppJieba &jieba)
-    : _jieba(jieba)
+: _conf(config), _jieba(jieba)
 {
-    readInfoFromFile(config, _jieba);
+    /* 读取网页库和位置偏移库的内容  */
+    readInfoFromFile();
+    
 }
 
 // 预处理
@@ -33,14 +38,12 @@ void PageLibPreprocessor::doProcess()
 }
 
 // 根据配置信息读取网页库和位置偏移库的内容
-void PageLibPreprocessor::readInfoFromFile(Configuration &config, SplitToolCppJieba &_jieba)
+void PageLibPreprocessor::readInfoFromFile()
 {
     string element;
-    map<string, string> conf = config.getConfigMap();
-    std::string _webPagePath = conf["RI_PAGE_DAT"]; // 直接获取扫描配置文件的容器
-    string _offsetPath = conf["OFFSET_DAT"];
+    map<std::string, std::string> confFile = _conf.getConfigMap();
 
-    ifstream ifsOFF(_offsetPath);
+    ifstream ifsOFF(confFile.at("OFFSET_DAT"));
     if (!ifsOFF)
     {
         perror("PageLibPreprocessor::readInfoFromFile: open offset file error");
@@ -48,7 +51,7 @@ void PageLibPreprocessor::readInfoFromFile(Configuration &config, SplitToolCppJi
     }
 
     // 以二进制模式打开网页库文件
-    ifstream ifsWeb(_webPagePath, std::ios::binary);
+    ifstream ifsWeb(confFile.at("RI_PAGE_DAT"), std::ios::binary);
     if (!ifsWeb)
     {
         perror("PageLibPreprocessor::readInfoFromFile: open ripage file error");
@@ -90,9 +93,9 @@ void PageLibPreprocessor::readInfoFromFile(Configuration &config, SplitToolCppJi
         // 转换为string
         string info(buffer.data(), bytesRead);
 
-        cout << "Reading file: " << info << "\n";
+        //cout << "Reading file: " << info << "\n";
 
-        WebPage webPage(info, config, _jieba);
+        WebPage webPage(info, _conf, _jieba);
         _pageLib.push_back(webPage);
     }
 }
@@ -100,7 +103,6 @@ void PageLibPreprocessor::readInfoFromFile(Configuration &config, SplitToolCppJi
 // 对冗余的网页进行去重
 void PageLibPreprocessor::cutRedundantPages()
 {
-
     std::sort(_pageLib.begin(), _pageLib.end());
     // 排序
 
@@ -109,22 +111,154 @@ void PageLibPreprocessor::cutRedundantPages()
 
     _pageLib.erase(last, _pageLib.end());
     // 删除重复元素：将起点迭代器到末尾删除
+
+    map<std::string, std::string> confFile = _conf.getConfigMap();
+    ifstream ifs(confFile.at("OFFSET_DAT"));
+    if (!ifs)
+    {
+        perror("PageLibPreprocessor::cutRedundantPages: open offset file error");
+        return;
+    }
+
+    string docid, offset, length;
+    for(auto &webPage : _pageLib){
+        int oldDocId =  webPage.getDocId();
+        while(ifs >> docid >> offset >> length){
+            if(oldDocId == stoi(docid)){
+                _offsetLib[stoi(docid)] = make_pair(stoi(offset), stoi(length));
+                break;
+            }
+        } 
+    }
+
 }
 
 // 创建倒排索引表
 void PageLibPreprocessor::buildInvertIndexTable()
 {
-    for (auto &webPage : _pageLib)
-    {
-        perror("docid");
-        cout << "正在处理网页：" << webPage.getDocId() << "\n";
+    // Step 1: 统计每个词的文档频率 DF
+    unordered_map<string, int> df;  // Document Frequency
+    for (auto &webPage : _pageLib) {
+        map<string, int> & wordsMap = webPage.getWordsMap();
+        for (auto & wordPair : wordsMap) {
+            df[wordPair.first]++;
+        }
+    }
 
+    // Step 2: 计算 IDF 和 TF-IDF 权重
+    int N = _pageLib.size();  // 文档总数
+    
+    for (auto &webPage : _pageLib) {
+        map<string, int> & wordsMap = webPage.getWordsMap();
+        int docId = webPage.getDocId();
+        
+        // 计算该文档中所有词的权重平方和，用于归一化
+        unordered_map<string, double> tfIdfWeights;
+        double sumSquaredWeights = 0.0;
+        
+        // 先计算每个词的TF-IDF权重
+        for (auto & wordPair : wordsMap) {
+            string word = wordPair.first;
+            int tf = wordPair.second;  // Term Frequency
+            
+            // 计算 IDF = log2(N/(DF+1))
+            double idf = log2((double)N / (df[word] + 1));
+            
+            // 计算 TF-IDF 权重
+            double weight = tf * idf;
+            tfIdfWeights[word] = weight;
+            
+            // 累加平方用于归一化
+            sumSquaredWeights += weight * weight;
+        }
+        
+        // 归一化处理
+        double normFactor = sqrt(sumSquaredWeights);
+        for (auto & weightPair : tfIdfWeights) {
+            string word = weightPair.first;
+            double normalizedWeight = weightPair.second;
+            if (normFactor > 0) {
+                normalizedWeight /= normFactor;
+            }
+            
+            // 将该词对应的文档ID和归一化权重加入倒排索引
+            _invertIndexTable[word].push_back(std::make_pair(docId, normalizedWeight));
+        }
+    }
+    
+    // Step 3: 对每个词的文档列表按文档ID排序
+    for (auto & entry : _invertIndexTable) {
+        std::sort(entry.second.begin(), entry.second.end(), 
+                  [](const pair<int, double>& a, const pair<int, double>& b) {
+                      return a.first < b.first;
+                  });
     }
 }
 
 // 将经过预处理之后的网页库、位置偏移库和倒排索引表写回到磁盘上
 void PageLibPreprocessor::storeOnDisk()
 {
+    map<std::string, std::string> confFile = _conf.getConfigMap();
+
+    // 写入去重后的网页库
+    ofstream ofsWeb(confFile.at("NEW_RIPE_PAGE_DAT"), std::ios::binary);
+    if (!ofsWeb)
+    {
+        perror("PageLibPreprocessor::storeOnDisk: open webpage file error");
+        return;
+    }
+    
+    // 写入去重后的偏移库
+    ofstream ofsOffset(confFile.at("NEW_OFFSET_DAT"));
+    if (!ofsOffset) 
+    {
+        perror("PageLibPreprocessor::storeOnDisk: open offset file error");
+        return;
+    }
+
+    // 写入倒排索引表
+    ofstream ofsInvertIndex(confFile.at("INVERT_INDEX_DAT"));
+    if (!ofsInvertIndex) 
+    {
+        perror("PageLibPreprocessor::storeOnDisk: open invert index file error");
+        return;
+    }
+
+    int offset = 0;
+    int docId = 0;
+    for (auto &webPage : _pageLib)
+    {
+        std::string doc = webPage.getDoc();
+        ofsWeb.write(doc.data(), doc.size());
+        
+        // 写入偏移信息 (docid, offset, length)
+        ++docId;
+        int length = doc.size();
+        ofsOffset << docId << " " << offset << " " << length << "\n";
+        offset += length;
+    }
+
+    // 写入倒排索引表到文件
+    // 格式：词项 文档频率 docId,权重 docId,权重 ...
+    for (auto & entry : _invertIndexTable) {
+        string word = entry.first;
+        vector<pair<int, double>> & docList = entry.second;
+        
+        // 写入词项
+        ofsInvertIndex << word << " ";
+        // 写入文档频率（包含该词的文档数量）
+        ofsInvertIndex << docList.size();
+        // 写入文档ID和权重
+        for (auto & docPair : docList) {
+            ofsInvertIndex << " " << docPair.first << "," << docPair.second;
+        }
+        // 每个词项的信息写入一行
+        ofsInvertIndex << "\n";
+    }
+    
+    ofsWeb.close();
+    ofsOffset.close();
+    ofsInvertIndex.close();
 }
 
 // SplitToolCppJieba _jieba;    // 分词对象

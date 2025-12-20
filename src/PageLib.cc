@@ -9,7 +9,9 @@
 #include <fstream>
 #include <regex>
 #include <string>
+#include <map>
 
+using std::map;
 using std::cerr;
 using std::cout;
 using std::hash;
@@ -19,28 +21,24 @@ using std::regex;
 using std::string;
 using std::to_string;
 
-PageLib::PageLib(Configuration &config, DirScanner &dirScanner)
+PageLib::PageLib(Configuration &configuration, DirScanner &dirScanner)
     : _dirScanner(dirScanner)
 {
-    // 获取配置，输出webpage存储路径
-    map<string, string> conf = config.getConfigMap();
-    std::string _webPagePath = conf["WEB_PAGE_PATH"];
-    _ripageDat = conf["RI_PAGE_DAT"];
-    _offsetDat = conf["OFFSET_DAT"];
+    // 获取配置，获取网页存放位置
+    map<string, string> config = configuration.getConfigMap();
+    _WebPagePath["RI_PAGE_DAT"] = config["RI_PAGE_DAT"];  // 网页库索引文件路径
+    _WebPagePath["OFFSET_DAT"] = config["OFFSET_DAT"];  // 网页库偏移文件路径
+    _WebPagePath["WEB_PAGE_PATH"] = config["WEB_PAGE_PATH"];   // 网页文件目录路径
 
-    // 遍历webpage目录,并存储
-    dirScanner(_webPagePath);
-    vector<string> pageFiles = dirScanner.getFiles();
-
-    // 将配置中读取的路径交给网页库处理函数，生成网页库容器
-    create(pageFiles);
 }
 
-void PageLib::create(vector<string> &fileNameList) // 创建网页库
+void PageLib::create() // 创建网页库
 {
     _pages.clear(); // 为网页库容器添加内容前确保容器为空
-
     size_t i = 0; // 网页库的索引docid
+
+    _dirScanner(_WebPagePath["WEB_PAGE_PATH"]);
+    vector<string> &fileNameList = _dirScanner.getFiles();
 
     size_t start = 0;
     for (auto &fileName : fileNameList)
@@ -96,6 +94,7 @@ void PageLib::create(vector<string> &fileNameList) // 创建网页库
 // 存储网页库和网页偏移库
 void PageLib::store() const
 {
+    string _ripageDat = _WebPagePath.at("RI_PAGE_DAT");
     std::ofstream ofs(_ripageDat);
     if (!ofs)
     {
@@ -107,7 +106,8 @@ void PageLib::store() const
         ofs << page;
     }
 
-    std::ofstream ofs2(_offsetDat);
+    string offsetPath = _WebPagePath.at("OFFSET_DAT");
+    std::ofstream ofs2(offsetPath);
     if (!ofs2)
     {
         perror("PageLib::store: opendir error");

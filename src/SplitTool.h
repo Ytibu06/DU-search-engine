@@ -2,6 +2,7 @@
 #define __SPLIT_TOOL_H__ 
 
 #include "Configuration.h"
+#include "../include/cppjieba/Jieba.hpp"
 #include <string>
 #include <vector>
 using std::string;
@@ -32,6 +33,7 @@ public:
 
 private:
     Configuration & _conf;  //配置文件路径
+    cppjieba::Jieba* _jieba;
 };
 
 #endif
