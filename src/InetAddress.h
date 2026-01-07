@@ -1,7 +1,7 @@
 #ifndef __INETADDRESS_H__
 #define __INETADDRESS_H__ 
 
-#include <unixHeader.h>
+//#include <unixHeader.h>
 #include <string>
 #include <arpa/inet.h>
 

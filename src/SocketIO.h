@@ -1,7 +1,7 @@
 #ifndef __SOCKETIO_H__
 #define __SOCKETIO_H__ 
 
-#include <unixHeader.h>
+#include <Cfun.h>
 
 /**
  * 网络IO类
